@@ -18,7 +18,7 @@ ConvenientPass 帮助用户解决现代数字生活中的密码管理难题：
 - **最低系统**: iOS 15.0+
 - **架构模式**: MVVM + Repository Pattern
 - **数据加密**: CryptoKit (AES-256-GCM)
-- **本地存储**: CoreData + Keychain
+- **本地存储**: 加密 JSON 文件 + Keychain
 - **生物认证**: LocalAuthentication
 
 ## 📂 项目结构
@@ -281,9 +281,15 @@ enum PasswordStrength: Int {
 - **生物认证**: 支持 Face ID / Touch ID 快速解锁
 
 ### 数据存储
-- 所有密码数据加密后存储在本地 CoreData
+- 所有密码数据加密后存储在本地文件（JSON）
 - 无任何网络请求，数据不会上传到云端
 - 支持本地加密备份与恢复
+
+## ✅ 最近更新
+
+- 优化“选择分类”交互：显式点击保存后才生效
+- 修复编辑页分类被重置的问题（仅首次加载初始数据）
+- 详情页在编辑后自动刷新，分类与内容实时更新
 
 ## 📝 版本规划
 

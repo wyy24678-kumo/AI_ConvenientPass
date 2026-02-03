@@ -47,6 +47,7 @@ struct AddEditPasswordView: View {
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
     @State private var showError: Bool = false
+    @State private var hasLoadedExistingData: Bool = false
     
     /// 当前选中的分类（计算属性）
     private var selectedCategory: Category {
@@ -108,7 +109,10 @@ struct AddEditPasswordView: View {
                 Text(errorMessage ?? "保存失败")
             }
             .onAppear {
-                loadExistingData()
+                if !hasLoadedExistingData {
+                    loadExistingData()
+                    hasLoadedExistingData = true
+                }
             }
         }
     }
@@ -276,22 +280,15 @@ struct AddEditPasswordView: View {
             
             // 设置分类ID
             selectedCategoryId = entry.categoryId
-            print("📝 加载数据 - 分类ID: \(entry.categoryId)")
         }
     }
     
     private func savePassword() {
         isLoading = true
         
-        // 调试日志
-        print("📝 保存密码 - 标题: \(title)")
-        print("📝 选中的分类ID: \(selectedCategoryId)")
-        print("📝 选中的分类名称: \(selectedCategory.name)")
-        
         do {
             switch mode {
             case .add:
-                print("📝 模式: 添加新密码")
                 _ = try PasswordRepository.shared.createPassword(
                     title: title,
                     username: username,
@@ -302,10 +299,6 @@ struct AddEditPasswordView: View {
                 )
                 
             case .edit(var entry):
-                print("📝 模式: 编辑密码")
-                print("📝 原分类ID: \(entry.categoryId)")
-                print("📝 新分类ID: \(selectedCategoryId)")
-                
                 entry.title = title
                 entry.username = username
                 entry.websiteURL = websiteURL.isEmpty ? nil : websiteURL
@@ -314,12 +307,10 @@ struct AddEditPasswordView: View {
                 entry.isFavorite = isFavorite
                 
                 try PasswordRepository.shared.updatePassword(&entry, newPassword: password)
-                print("📝 保存完成")
             }
             
             dismiss()
         } catch {
-            print("❌ 保存失败: \(error)")
             errorMessage = error.localizedDescription
             showError = true
         }
@@ -449,7 +440,6 @@ struct CategorySelectionView: View {
                 Button {
                     // 只更新本地临时选中状态，不立即返回
                     tempSelectedId = category.id
-                    print("🔄 临时选择分类: \(category.name), ID: \(category.id)")
                 } label: {
                     HStack {
                         Image(systemName: category.icon)
@@ -480,7 +470,6 @@ struct CategorySelectionView: View {
                     Button("保存") {
                         // 确认选择，更新绑定值
                         selectedCategoryId = tempSelectedId
-                        print("✅ 确认保存分类ID: \(tempSelectedId)")
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -490,7 +479,6 @@ struct CategorySelectionView: View {
         .onAppear {
             // 初始化临时选中ID为当前值
             tempSelectedId = selectedCategoryId
-            print("📝 分类选择页面加载，当前ID: \(selectedCategoryId)")
         }
     }
 }

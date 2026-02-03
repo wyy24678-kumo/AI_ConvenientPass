@@ -17,12 +17,20 @@ struct PasswordDetailView: View {
     // MARK: - 状态
     
     @Environment(\.dismiss) private var dismiss
+    @State private var currentPassword: PasswordEntry
     @State private var showPassword: Bool = false
     @State private var decryptedPassword: String = ""
     @State private var showEditSheet: Bool = false
     @State private var showDeleteAlert: Bool = false
     @State private var isCopied: Bool = false
     @State private var copiedField: CopiedField?
+    
+    // MARK: - 初始化
+    
+    init(password: PasswordEntry) {
+        self.password = password
+        _currentPassword = State(initialValue: password)
+    }
     
     // MARK: - Body
     
@@ -44,7 +52,7 @@ struct PasswordDetailView: View {
             securitySection
             
             // 备注
-            if let notes = password.notes, !notes.isEmpty {
+            if let notes = currentPassword.notes, !notes.isEmpty {
                 notesSection(notes)
             }
             
@@ -67,9 +75,9 @@ struct PasswordDetailView: View {
         }
         .sheet(isPresented: $showEditSheet, onDismiss: {
             // 编辑后刷新数据
-            PasswordRepository.shared.loadPasswords()
+            reloadPassword(source: "editDismiss")
         }) {
-            AddEditPasswordView(mode: .edit(password))
+            AddEditPasswordView(mode: .edit(currentPassword))
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {
             Button("取消", role: .cancel) {}
@@ -80,7 +88,7 @@ struct PasswordDetailView: View {
             Text("删除后将无法恢复，确定要删除这条密码记录吗？")
         }
         .onAppear {
-            decryptPassword()
+            reloadPassword(source: "onAppear")
         }
     }
     
@@ -95,8 +103,8 @@ struct PasswordDetailView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(hex: password.securityLevel.color)?.opacity(0.8) ?? .gray,
-                                    Color(hex: password.securityLevel.color)?.opacity(0.6) ?? .gray
+                                    Color(hex: currentPassword.securityLevel.color)?.opacity(0.8) ?? .gray,
+                                    Color(hex: currentPassword.securityLevel.color)?.opacity(0.6) ?? .gray
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -104,7 +112,7 @@ struct PasswordDetailView: View {
                         )
                         .frame(width: 64, height: 64)
                     
-                    Text(password.title.prefix(1).uppercased())
+                    Text(currentPassword.title.prefix(1).uppercased())
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -112,17 +120,17 @@ struct PasswordDetailView: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(password.title)
+                        Text(currentPassword.title)
                             .font(.title2)
                             .fontWeight(.semibold)
                         
-                        if password.isFavorite {
+                        if currentPassword.isFavorite {
                             Image(systemName: "star.fill")
                                 .foregroundColor(.yellow)
                         }
                     }
                     
-                    if let url = password.websiteURL {
+                    if let url = currentPassword.websiteURL {
                         Text(url)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -141,13 +149,13 @@ struct PasswordDetailView: View {
             DetailRow(
                 icon: "person.fill",
                 title: "用户名",
-                value: password.username,
+                value: currentPassword.username,
                 isCopied: copiedField == .username
             ) {
-                copyToClipboard(password.username, field: .username)
+                copyToClipboard(currentPassword.username, field: .username)
             }
             
-            if let url = password.websiteURL, !url.isEmpty {
+            if let url = currentPassword.websiteURL, !url.isEmpty {
                 DetailRow(
                     icon: "globe",
                     title: "网站",
@@ -208,7 +216,7 @@ struct PasswordDetailView: View {
         Section("分类") {
             HStack {
                 // 分类图标
-                let category = Category.presets.first(where: { $0.id == password.categoryId }) ?? Category.other
+            let category = Category.presets.first(where: { $0.id == currentPassword.categoryId }) ?? Category.other
                 
                 Image(systemName: category.icon)
                     .foregroundColor(category.color)
@@ -245,17 +253,17 @@ struct PasswordDetailView: View {
                         .foregroundColor(.secondary)
                     
                     HStack(spacing: 8) {
-                        Text("\(password.securityScore)")
+                        Text("\(currentPassword.securityScore)")
                             .font(.title3)
                             .fontWeight(.semibold)
-                            .foregroundColor(Color(hex: password.securityLevel.color) ?? .gray)
+                            .foregroundColor(Color(hex: currentPassword.securityLevel.color) ?? .gray)
                         
-                        Text(password.securityLevel.title)
+                        Text(currentPassword.securityLevel.title)
                             .font(.subheadline)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
-                            .background(Color(hex: password.securityLevel.color)?.opacity(0.2) ?? .clear)
-                            .foregroundColor(Color(hex: password.securityLevel.color) ?? .gray)
+                            .background(Color(hex: currentPassword.securityLevel.color)?.opacity(0.2) ?? .clear)
+                            .foregroundColor(Color(hex: currentPassword.securityLevel.color) ?? .gray)
                             .cornerRadius(4)
                     }
                 }
@@ -265,7 +273,7 @@ struct PasswordDetailView: View {
             .padding(.vertical, 4)
             
             // 密码年龄警告
-            if password.isOldPassword {
+            if currentPassword.isOldPassword {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.orange)
@@ -295,18 +303,18 @@ struct PasswordDetailView: View {
             DetailRow(
                 icon: "calendar.badge.plus",
                 title: "创建时间",
-                value: formatDate(password.createdAt),
+                value: formatDate(currentPassword.createdAt),
                 isCopied: false
             ) {}
             
             DetailRow(
                 icon: "calendar.badge.clock",
                 title: "最后更新",
-                value: formatDate(password.updatedAt),
+                value: formatDate(currentPassword.updatedAt),
                 isCopied: false
             ) {}
             
-            if let lastUsed = password.lastUsedAt {
+            if let lastUsed = currentPassword.lastUsedAt {
                 DetailRow(
                     icon: "clock.fill",
                     title: "最后使用",
@@ -336,9 +344,17 @@ struct PasswordDetailView: View {
     
     private func decryptPassword() {
         do {
-            decryptedPassword = try CryptoManager.shared.decryptToString(password.encryptedPassword)
+            decryptedPassword = try CryptoManager.shared.decryptToString(currentPassword.encryptedPassword)
         } catch {
             decryptedPassword = "[解密失败]"
+        }
+    }
+
+    private func reloadPassword(source: String) {
+        if let updated = PasswordRepository.shared.fetch(byId: password.id) {
+            currentPassword = updated
+            decryptPassword()
+        } else {
         }
     }
     
@@ -370,7 +386,7 @@ struct PasswordDetailView: View {
     
     private func deletePassword() {
         do {
-            try PasswordRepository.shared.delete(password)
+            try PasswordRepository.shared.delete(currentPassword)
             dismiss()
         } catch {
             print("删除失败: \(error)")

@@ -22,6 +22,9 @@ Carthage/Build/
 # IDE
 .idea/
 .vscode/
+.cursor/
+**/xcuserdata/
 
 # OS
 .DS_Store
+
