@@ -1,8 +1,5 @@
-# AI_ConvenientPass / ConvenientPass
-
-My first vibe coding iOS app. A local user password manager that is secure, convenient, and has no cloud dependency.
-
 # ConvenientPass - 智能密码管理箱
+> My first vibe coding iOS app. A local user password manager that is secure, convenient, and has no cloud dependency.
 
 > 一款面向大众的本地加密密码管理器，安全、便捷、无云端依赖
 
