@@ -1,0 +1,27 @@
+# Xcode
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Build
+build/
+*.ipa
+*.dSYM/
+
+# SwiftPM
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
